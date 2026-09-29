@@ -1,24 +1,58 @@
 name: Daily Toji Reading Message
+
 on:
   schedule:
+    # 매일 오전 8:00
+    - cron: '0 8 * * *'
+      timezone: 'Asia/Seoul'
+
+    # 매일 오후 8:17
     - cron: '17 20 * * *'
       timezone: 'Asia/Seoul'
+
   workflow_dispatch:
     inputs:
       test_date:
-        description: 'YYYY-MM-DD (optional)'
+        description: '테스트 날짜 (YYYY-MM-DD)'
         required: false
         type: string
+
+      message_type:
+        description: '테스트할 메시지'
+        required: true
+        default: 'morning'
+        type: choice
+        options:
+          - morning
+          - evening
+
 jobs:
   send:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Send
+
+      - name: Send Discord message
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TEST_DATE: ${{ inputs.test_date }}
+
+          # 수동 실행이면 선택한 값을 사용하고,
+          # 자동 실행이면 실행된 cron을 보고 morning/evening 판단
+          MESSAGE_TYPE: >-
+            ${{
+              github.event_name == 'workflow_dispatch'
+              && inputs.message_type
+              || (
+                github.event.schedule == '0 8 * * *'
+                && 'morning'
+                || 'evening'
+              )
+            }}
+
         run: python bot.py
