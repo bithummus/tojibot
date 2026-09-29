@@ -148,7 +148,6 @@ def send_discord(content):
     payload = json.dumps(
         {
             "content": content,
-            "username": "토지 완독 도우미",
             "allowed_mentions": {
                 "parse": []
             }
