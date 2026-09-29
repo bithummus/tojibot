@@ -69,7 +69,7 @@ def morning_message(week, day_index):
         (week["week"] + day_index) % len(MORNING_CHEERS)
     ]
 
-    return f"""☀️ **좋은 아침!😸 『토지』 {week['week']}주차 · Day {day_index + 1} ({weekday})**
+    return f"""☀️ **좋은 아침! 『토지』 {week['week']}주차 · Day {day_index + 1} ({weekday})**
 
 📖 **이번 주 진도**
 {week['volume']} · {week['scope']}
@@ -112,7 +112,7 @@ def evening_message(week, day_index):
 💬 **오늘의 짧은 이야기**
 {topic}
 
-오늘 분량 읽은 친구들은 편하게 한마디씩 남겨줘. 😺
+오늘 분량 읽은 친구들은 편하게 한마디씩 남겨줘.
 아직 못 읽었다면 괜찮아. 오늘 밤 조금이라도 이어가보자! 📖
 """
 
