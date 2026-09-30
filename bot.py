@@ -3,7 +3,7 @@ import json
 import sys
 import urllib.request
 
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from zoneinfo import ZoneInfo
 
 
@@ -32,16 +32,19 @@ def load_schedule():
         return json.load(f)
 
 
-def find_current_schedule(now):
-    today = now.date().isoformat()
+def find_current_schedule_by_date(target_date):
+    target = target_date.isoformat()
 
     for week in load_schedule():
-        if week["start"] <= today <= week["end"]:
+        if week["start"] <= target <= week["end"]:
+
             start_date = datetime.fromisoformat(
                 week["start"]
             ).date()
 
-            day_index = (now.date() - start_date).days
+            day_index = (
+                target_date - start_date
+            ).days
 
             return week, day_index
 
@@ -134,6 +137,32 @@ def build_message(week, day_index, message_type):
         f"알 수 없는 MESSAGE_TYPE: {message_type}"
     )
 
+def get_target_datetime(message_type):
+    now = datetime.now(KST)
+
+    if message_type == "morning":
+        scheduled_hour = 8
+        scheduled_minute = 0
+    else:
+        scheduled_hour = 20
+        scheduled_minute = 17
+
+    scheduled_today = now.replace(
+        hour=scheduled_hour,
+        minute=scheduled_minute,
+        second=0,
+        microsecond=0
+    )
+
+    # 아직 오늘의 해당 스케줄 시간이 오기 전이라면
+    # 실행 중인 job은 전날 스케줄이 늦게 실행된 것
+    if now < scheduled_today:
+        target_date = now.date() - timedelta(days=1)
+    else:
+        target_date = now.date()
+
+    return now, target_date
+
 
 def send_discord(content):
     webhook_url = os.environ.get(
@@ -181,23 +210,22 @@ def send_discord(content):
 
 
 def main():
-    test_date = os.environ.get("TEST_DATE")
-    message_type = os.environ.get(
-        "MESSAGE_TYPE",
-        "evening"
-    )
-
     if test_date:
         now = datetime.fromisoformat(
             test_date
         ).replace(
             tzinfo=KST
         )
-    else:
-        now = datetime.now(KST)
 
-    week, day_index = find_current_schedule(
-        now
+    target_date = now.date()
+    else:
+        now, target_date = get_target_datetime(
+            message_type
+        )
+
+
+    week, day_index = find_current_schedule_by_date(
+        target_date
     )
 
     if not week:
