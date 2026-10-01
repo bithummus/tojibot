@@ -20,7 +20,7 @@
 Webhook URL은 비밀번호처럼 취급하고 저장소 파일에 직접 넣지 마세요.
 
 ## 발송 시간
-`.github/workflows/daily.yml`은 매일 20:17, `Asia/Seoul`로 설정되어 있습니다.
+`.github/workflows/daily.yml`은 매일 9:03 및 20:17, `Asia/Seoul`로 설정되어 있습니다.
 예를 들어 오전 8:30으로 바꾸려면:
 `cron: '30 8 * * *'`
 
