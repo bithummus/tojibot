@@ -2,11 +2,9 @@ name: Daily Toji Reading Message
 
 on:
   schedule:
-    # 매일 오전 8:00
     - cron: '7 9 * * *'
       timezone: 'Asia/Seoul'
 
-    # 매일 오후 8:17
     - cron: '17 20 * * *'
       timezone: 'Asia/Seoul'
 
@@ -37,22 +35,30 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Determine message type
+        id: message
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_TYPE: ${{ inputs.message_type }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "type=$INPUT_TYPE" >> "$GITHUB_OUTPUT"
+
+          elif [ "$SCHEDULE" = "7 9 * * *" ]; then
+            echo "type=morning" >> "$GITHUB_OUTPUT"
+
+          elif [ "$SCHEDULE" = "17 20 * * *" ]; then
+            echo "type=evening" >> "$GITHUB_OUTPUT"
+
+          else
+            echo "type=unknown" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Send Discord message
+        if: steps.message.outputs.type != 'unknown'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TEST_DATE: ${{ inputs.test_date }}
-
-          # 수동 실행이면 선택한 값을 사용하고,
-          # 자동 실행이면 실행된 cron을 보고 morning/evening 판단
-          MESSAGE_TYPE: >-
-            ${{
-              github.event_name == 'workflow_dispatch'
-              && inputs.message_type
-              || (
-                github.event.schedule == '0 8 * * *'
-                && 'morning'
-                || 'evening'
-              )
-            }}
-
+          MESSAGE_TYPE: ${{ steps.message.outputs.type }}
         run: python bot.py
