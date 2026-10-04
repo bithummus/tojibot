@@ -2,13 +2,12 @@ name: Daily Toji Reading Message
 
 on:
   schedule:
+    # 매일 오전 9:07
     - cron: '7 9 * * *'
       timezone: 'Asia/Seoul'
 
+    # 매일 오후 8:17
     - cron: '17 20 * * *'
-      timezone: 'Asia/Seoul'
-
-    - cron: '*/5 * * * *'
       timezone: 'Asia/Seoul'
 
   workflow_dispatch:
@@ -38,30 +37,32 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Determine message type
-        id: message
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          SCHEDULE: ${{ github.event.schedule }}
-          INPUT_TYPE: ${{ inputs.message_type }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "type=$INPUT_TYPE" >> "$GITHUB_OUTPUT"
-
-          elif [ "$SCHEDULE" = "7 9 * * *" ]; then
-            echo "type=morning" >> "$GITHUB_OUTPUT"
-
-          elif [ "$SCHEDULE" = "17 20 * * *" ]; then
-            echo "type=evening" >> "$GITHUB_OUTPUT"
-
-          else
-            echo "type=unknown" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Send Discord message
-        if: steps.message.outputs.type != 'unknown'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TEST_DATE: ${{ inputs.test_date }}
-          MESSAGE_TYPE: ${{ steps.message.outputs.type }}
-        run: python bot.py
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_TYPE: ${{ inputs.message_type }}
+
+        run: |
+          echo "event=$EVENT_NAME"
+          echo "schedule=$SCHEDULE"
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            MESSAGE_TYPE="$INPUT_TYPE"
+
+          elif [ "$SCHEDULE" = "7 9 * * *" ]; then
+            MESSAGE_TYPE="morning"
+
+          elif [ "$SCHEDULE" = "17 20 * * *" ]; then
+            MESSAGE_TYPE="evening"
+
+          else
+            echo "::error::알 수 없는 schedule: '$SCHEDULE'"
+            exit 1
+          fi
+
+          echo "MESSAGE_TYPE=$MESSAGE_TYPE"
+
+          MESSAGE_TYPE="$MESSAGE_TYPE" python bot.py
